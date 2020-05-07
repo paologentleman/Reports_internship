@@ -1,0 +1,110 @@
+                <meta charset="utf-8" emacsmode="-*- markdown -*-">
+                            **Baseline Model Selection (Supervised)**
+
+
+
+Purpose
+===============================================================================
+In this report I will briefly describe the steps towards the choice of the baseline model for the supervised text classification problem addressed to the Communication dataset.
+
+
+Macrotopic
+===============================================================================
+Since we are dealing with a multi-class classification task first thing to be investigated are the shape of the classes.
+In this problem we are dealing with two different type of classes, 'macro_topic' and 'topic', both of which are divided in different classes that we want to be able to model. Both the cases, for now will be treated as two different classification tasks. We'll concentrate first on the macro-topic prediction
+
+Preprocessing steps
+-------------------------------------------------------------------------------
++ **Tweets** : we want to concentrate on short text analysis.
++ **Class: 'Other'**: for now we want to discard the class 'Other' since it was found to have noise.
++ **Dropping NaN**: we are dropping all the observations that have 'NaN' value in the field 'sub_text'
++ **Clean Text**: removing links, removing symbols, removing emoticons, removing unnecessary spaces
++ **Clear Punctuation**
++ **Remove stopwoprds**:the stopwords have been selected combining the list available with other factors combined to three other factors. Specifically three other factors were considered:
+	+ words with very **low tf**: words that occur in high percentage of the documents are likely irrilevant
+	+ words with very **high tf**: only words that are extremely unfrequent (i.e. “yaaaaayy!!”)
+	+ words with very **low idf**: words that occur in the most documents will have lower idf value. Comparing with the list of low tf is helpful.
++ **Lemmatize**
++ **Lowercase**
++ **Duplicates removal**: the dataset has shown to have almost half of the tweets duplicated.
+
+The classes
+-------------------------------------------------------------------------------
+Since the classes have been found strongly unbalanced, for the moment we'll perform undersampling of the majority class in order to obtain a balanced dataset. 
+At the end of the preprocessing we obtain 4746 tweets divided precisely in 7 classes.
+
+Text Rapresentation
+-------------------------------------------------------------------------------
+We have various options:
+
++ Count Vectors as features
++ TF-IDF Vectors as features
++ Word Embeddings as features
++ Text / NLP based features
++ Topic Models as features
+
+For now I have chosen to consider only **tfidf**, but further work can consider the others and comparisons can be performed.
+Since we are dealing with short texts I won't expect very high valus of accuracy with tfidf because using vector space for high dimensional data results in sparsity. This causes high compute and memory storage.
+
+Model
+-------------------------------------------------------------------------------
+Once found the feature vectors built, several machine learning classification models have been tryed in order to find which one performs best on our data. We will try with the following models:
+
++ Random Forest
++ Support Vector Machine
++ K Nearest Neighbors
++ Multinomial Naïve Bayes
++ Multinomial Logistic Regression
++ Gradient Boosting
+
+The methodology used to train each model is as follows:
+
+1. First of all, we'll decide which hyperparameters we want to tune.
+2. Secondly, we'll define the metric we'll get when measuring the performance of a model. In this case, we'll use the accuracy.
+3. We'll perform a Randomized Search Cross Validation process in order to find the hyperparameter region in which we get higher values of accuracy.
+4. Once we find that region, we'll use a Grid Search Cross Validation process to exhaustively find the best combination of hyperparameters.
+5. Once we obtain the best combination of hyperparameters, we'll obtain the accuracy on the training data and the test data and the classification report.
+
+Random Forest
+-------------------------------------------------------------------------------
+
+![classification report](images/randomforest.png)
+
+
+Multinomial Logistic Regression
+-------------------------------------------------------------------------------
+
+![classification report](images/logreg.png)
+
+Multinomial Naive Bayes
+-------------------------------------------------------------------------------
+
+![classification report](images/nb.png)
+
+SVM
+-------------------------------------------------------------------------------
+
+
+![classification report](images/svm.png)
+
+KNN
+-------------------------------------------------------------------------------
+
+![classification report](images/knn.png)
+
+
+!!! WARNING
+    	1. Clear evidence of overfitting too big gap between train and test accuracy.
+
+	    2. Consider to add a **max_features** threshold in the tfidfVectorizer.
+
+	    3. Perform same analysis with the class 'Other'.
+
+	    4. Perform same analysis on the 'topics'.
+
+	    5. Take in consideration other models: LSTM, CNN, RNN, HAN.
+
+	    6. Combine different text representations.
+
+
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>

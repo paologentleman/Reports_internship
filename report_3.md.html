@@ -1,0 +1,70 @@
+                <meta charset="utf-8" emacsmode="-*- markdown -*-">
+                            **Starter Document**
+
+
+
+Purpose
+===============================================================================
+In this report I will briefly expone the improvements, analysis and considerations regarding the supervised task related to the comms dataset.
+
+Data
+-------------------------------------------------------------------------------
+
+Temporal distribution of macrotopics:
+
+![Temporal distribution of macrotopics](images/temporal_distr.png)
+
+Found out that there are 11k tweets with 'sub_text' field which is a null value. The totality of these are belonging to the macro_topic class 'Other'. In this new implementation we considered the 'content' feature whenever NaN has detected in the 'sub_text' field.
+
+Preprocessing
+-------------------------------------------------------------------------------
+
++ **Tweets** : we want to concentrate on short text analysis.
++ **Class: 'Other'**: for now we want to discard the class 'Other' since it was found to have noise.
++ **Clean Text**: removing links, removing symbols
++ **Remove Digits**
++ **Entity Detection**: took in consideration Persons and Locations.
++ **Clear Punctuation**
++ **Clear Unnecessary spaces**
++ **Converted Emojis**
++ **Remove stopwoprds**:the stopwords have been selected combining the list available with other factors combined to three other factors. Specifically three other factors were considered:
+	+ words with very **low tf**: words that occur in high percentage of the documents are likely irrilevant
+	+ words with very **high tf**: only words that are extremely unfrequent (i.e. “yaaaaayy!!”)
+	+ words with very **low idf**: words that occur in the most documents will have lower idf value. Comparing with the list of low tf is helpful.
++ **Lemmatize**
++ **Lowercase**
++ **Tokenize**
++ **Duplicates removal**: duplicates have been removed take in consideration each set of preprocessed tokens.
+
+Modelling
+-------------------------------------------------------------------------------
+
+I have selected the best performing model of last classification trial, which was Random Forest Classifier, and performed the classification with the new preprocessed dataset.
+
+Instead of doing undersampling/oversampling this time I have used the class_weight attribute of Random Forest Classifier giving different weights to the class based on their magnitude. Specifically the weigths have been computed using `sklearn.utils.class_weight` wich calculates the weights for each class as `n_samples/(n_classes * np.bincount(y))`.
+
+Hyperparameter tuning has been performed executing Randomized CV before and then GridSearch CV on the optimal values of the first classification, giving as best parameters: 
+
+![Random Forest best parameters](images/rand_for.png)
+
+Giving as classification report:
+
+![Random Forest best parameters](images/improved_rfc.png)
+
+
+Considerations
+-------------------------------------------------------------------------------
+
+!!! WARNING
+    1. Given the results of the accuracy on train and test set (respectively 0.98 and 0.86) it could be possible that the model overfits? Even if it should not, because the testing performance of Random Forests does not decrease (due to overfitting) as the number of trees increases. Hence after certain number of trees the performance tend to stay in a certain value.
+
+    2. **How to treat 'Others'?**
+
+    3. Could be useful inflate the dataset with other tweets we are sure that don't speam about enel?
+    
+    4. Take in consideration imposing max_features in TFIDF
+
+
+
+
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>

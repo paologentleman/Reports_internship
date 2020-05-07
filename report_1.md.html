@@ -1,0 +1,181 @@
+                <meta charset="utf-8" emacsmode="-*- markdown -*-">
+                            **Periodic Report (Paolo Gentile),
+                             April 3rd 2020**
+
+This report represents a review containing the brainstorming together with the process that will define my master thesis together with the successful completion of the projects proposed during my internship in Enel.
+
+Use-case Definition
+===============================================================================
+In this section I will briefly describe the two scenarios proposed by Enel's staff that will represent the starting point of my thesis research. Both the presented projects are related in terms of objective points and possible methodology approaches. Ideally it is likely to develop a stream able to face both scenarios with the same techniques.
+
+Trading
+-------------------------------------------------------------------------------
+For this project the main objective is to perform topic modelling over a dataset composed of tweets already retrieved by means of a web crawler developed in Enel.
+
+The data used is the text of the retrieved tweets together with the authors, hashtags, mentions, timestamp and eventually any link to external sources.
+
+The interest is in tweets relative to the energy market and its surrounding business. So first of all it is needed to discern the tweets regarding the energy market from the ones that discuss whatever other argument. Then, among the chosen set of tweets, we want to distinguish which are relevant for Enel's business strategies and which are not.
+Finally each tweet relative to the energy market that has been considered relevant will be classified and labeled depending on its specific argument.
+
+
+Communication
+-------------------------------------------------------------------------------
+In this specific context, the data is characterized by tweet's text and also any relative news or article's text regarding Enel.
+
+The retrieved texts are categorized in 7 *macro-topics* such as *"Reliability", "Service", "Environment", "HR", "Financial Return", "Governance"* and *"Communication"* each of which is in turn divided in specific and vary *sub-topics*. 
+
+The aim is to develop a model able to automatically and wisely categorize the topics taking in consideration also new potential topics analyzing and monitoring their strength.
+
+
+Topic Modelling
+===============================================================================
+Among the different approaches and techniques taken into consideration, for the moment I will focus on the main aspects of topic modelling by also analyzing and comparing studies found in the literature.
+
+Topic modelling is a technique, originated from the field of natural language processing, which task is to understand and identify the underlying context discussed in a collection of documents. By detecting patterns (i.e., word frequency and distance between words), a topic model clusters feedback that are similar, and words or expressions that appear most often. It views documents as mixtures of probabilistic topics, where a topic is a probability distribution over words. 
+
+With this information, it is possible to quickly deduce the clusters and empirically reason what each set of texts is talking about. This approach is *unsupervised*, in fact no training is required unlikely a *topic classification* task which delivers ready-made topics with labels chosen from a set over which the model will be trained eliminating any guesswork process.
+
+!!! WARNING
+    TODO: Discuss further Topic Modelling theory, techniques and use cases.
+
+
+On-line Topic Tracking
+===============================================================================
+One interesting approach is proposed in [this study](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8703401) which main features will be discussed below.
+
+The paper work presents a pipeline for topic modelling that faces the following two main phases: a topic detection phase is performed by the means of LDA, in order to extract the topics; then topic tracking phase is developed in order to organize texts regarding the same topic in chronological order, for this purpose Single-Pass clustering algorithm is used together with Jensen-Shannon divergence as similarity measure between topics.
+
+Topic Detection
+-------------------------------------------------------------------------------
+In this step LDA model is performed over the set to extract the topic of the text. The variables $\alpha$ and $\beta$, which respectively represent the priori parameter of the topic distribution over the entire document set and priori parameter of the word distribution across all topics, are calculated as $\alpha = 50/k , \beta = 0.01$. As model parameter estimation method Gibbs Sampling is used since it is the most efficient and simple method to implement.
+
+One of the key points of LDA is the tradeoff between the optimal K (number of topics) and the specificity of the topics:  several different values for K may be plausible, but by increasing it we sacrifice clarity. **Perplexity** is used as a reference for determining the number of topics in the text set, it represents a statistical measure of how well a probability model predicts a sample. The benefit of this statistic comes in comparing perplexity across different models with varying Ks. The model with the lowest perplexity is generally considered the “best” in terms of ability to predict new topics and to generalize them. It is defined as: 
+$$
+\text {perplexity }(D)=\exp \left(-\frac{\sum_{d=1}^{M} \log p\left(w_{d}\right)}{\sum_{d=1}^{M} N_{d}}\right)
+$$
+$D$ represents the test set in the corpus, and the test set has a total of $M$ documents. $N_d$ represents the number of words in each document $d$, $w_d$ represents the word in document $d, p(w_d)$ is the probability of the word $w_d$ in the document.
+
+Topic Tracking
+-------------------------------------------------------------------------------
+As the stream of incoming texts increases, there may be also new topics identified. According to the similarity between the existing topic with the new one, we want to decide if it's worth to create a new topic or to consider the text already belonging to a known topic.
+
+In order to compute the topics similarity, JSD (Jensen-Shannon Divergence) is preferred to KLD (Kullback-Leibler Divergence). JSD represents a method of measuring the similarity between two probability distributions, in this case our topics. The smaller the JSD value is, the larger is the similarity between two topics.
+
+Topic tracking algorithm can then be improved by introducing two factors:
+
+1. In the calculation of the similarity measure between topics, time consideration is introduced. The larger the time span between two topic, the smaller is the similarity between them. A time decay formula is introduced:$$H(\Delta t)=e^{(-\Delta t / L)^{k} * \log (2)}.$$Where $\Delta t$ is the time difference between the two topics, and parameters $L$ and $k$ are used to control the decay rate. $L$ is the half-life time, that is, the correlation between the two topics with the gap $L$ is attenuated to half. $k$ controls the steepness of the curve. Before computing the JDS, a time evaluation is performed. The topic with too long time distance does not need to perform similarity calculation. This would reduce time and computation consuming.
+	
+2. The topic stream is organized in batches according to a time window. All the topics that fall in the same time window are considered a batch. When a batch of topic data is processed, the topic categories are divided and the topic centers are updated. The purpose is to solve the impact of the input order on the results, and to select the most similar new topic as the topic category center.
+
+Topic Evaluation
+-------------------------------------------------------------------------------
+As evaluation method both [TBT2003](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4172701/) and F1 measurements have been used proving LDA's results above the baseline performances (K-means). 
+
+TBT2003 consists in evaluating depending on the loss rate and false positive rate of the relevant reports in the topic detection and tracking results. Defined as:
+$$
+\left(C_{\text {det}}\right)_{\text {norm}}=\frac{C_{\text {miss}} \cdot P_{\text {miss}} \cdot P_{\text {target}}+C_{\text {fa}} \cdot P_{\text {fa}} \cdot P_{\text {non}-\text {target}}}{\min \left(C_{\text {miss}} \cdot P_{\text {target}}, C_{\text {fa}} \cdot P_{\text {non-target}}\right)}
+$$
+$C_{det}$ represents the error recognition cost of the tracking system. The smaller the value is, the better the system tracking performance is. $C_{miss}$ indicates the cost of tracking loss. $C_{fa}$ indicates the cost of tracking the error report. $P_{target}$ and $P_{non−target}$ are a priori probabilities of whether a report is related to a tracking topic. 
+$P_{miss}$ is the loss rate of the tracking report; Pfa is the false positive rate of the tracking report. In general, $C_{miss} = 1$, $C_{fa} = 0.1$, $P_{non−target} = 0.98$ , $P_{target} = 0.2$.
+
+F1 value is also used as evaluation metric, defined as the harmonic mean of the precision $P$ and recall rate $R$. Respectively defined as:
+
+$$
+\begin{aligned} P &=\frac{T P}{F P+T P} \\ R &=\frac{T P}{F N+T P} \\ F 1 &=\frac{2 * P * R}{P+R} \end{aligned}
+$$
+
+Considerations
+-------------------------------------------------------------------------------
+!!! WARNING
+    1) Doesn't take into account improvements specifically for short texts. How does it change? Can we improve LDA for short texts? Check Gibbs Sampling Dirichlet Mixture Model (GSDMM).
+
+    2) The algorithm for the topic tracking seems to be very efficient when we expect the number topics to be very high. How does it behave when we actually want or expect few topcics (i.e., 10 topics)?
+
+    3) Traditional topic models such as LDA, are probabilistic models which exploit statistical inference to discover latent patterns of data, inferring model parameters from observations. Don't these methods make the topic modeling tasks perform poorly as the texts are shorter and sparser since the observations are fewer?
+
+!!! Tip
+    1) Uses Perplexity measurement for the optimal number of clusters. (pros & cons)
+
+    2) It considers temporal constraints in the similarity computation between topics.
+
+    3) Eventually considers creating of new topics and upgrading the old ones.
+
+Multiscale Event Detection
+===============================================================================
+
+[This other paper work](https://arxiv.org/pdf/1404.7048.pdf) focused on multi-scale event detection. Taking in consideration temporal and spatial information of tweets, together with the texts, the aim is to detect events that occur in different scales of time or space but not necessarily in both simultaneously.
+
+A baseline approach is proposed which detects events that are of similar scales and localized in both time and space, and then an innovative method is shown exploring the properties of the wavelet transform to study the relationship between spatial and temporal dimension.
+
+Both approaches are set as graph-based clustering problems where the vertices of the graph represent the tweets, and the edges reflect their similarities. The goal is to group similar tweets into the same cluster such that they correspond to a real world event. The main difference between the two approaches are how to compute the similarity between tweets.
+
+Baseline: Local Event Detection (LED)
+-------------------------------------------------------------------------------
+In this baseline event detection approach, we measure the similarity between every pair of tweets $t_i$ and $t_j$ as:
+$$
+S_{1}\left(t_{i}, t_{j}\right)=\left\{\begin{array}{ll}s_{\mathrm{tfidf}}\left(t_{i}, t_{j}\right) & \text { if } t\left(t_{i}, t_{j}\right) \leq T_{t} \text { and } d\left(t_{i}, t_{j}\right) \leq T_{d} \\ 0 & \text { otherwise }\end{array}\right.
+$$
+where \(t\left(t_{i}, t_{j}\right)\) and \(d\left(t_{i}, t_{j}\right)\) are the temporal difference in minutes and the
+spatial distance in meters, respectively, between \(t_{i}\) and \(t_{j} .\)
+The thresholds \(T_{t}\) and \(T_{d}\) are the limits below which we consider the events to be close enough, spatially and chronologically, to represent similar events.
+Under such constraints, two tweets \(t_{i}\) and \(t_{j}\) that have a reasonably high text similarity tend to refer to the same event in real world. The function \(s_{\mathrm{tf}-\mathrm{i}}\) uf \(\left(t_{i}, t_{j}\right)\) represents the text similarity of \(t_{i}\) and \(t_{j}\) in terms of the cosine angle between the vector representations of the two tweets using \((t f-i d f)\) weighting scheme.
+
+Given \(S_{1}\left(t_{i}, t_{j}\right)\) as the pairwise similarity between tweets, we can create an undirected and weighted graph with adjacency matrix \(W_{1}:\)
+$$
+W_{1}(i, j)=\left\{\begin{array}{ll}S_{1}\left(t_{i}, t_{j}\right) & \text { if } i \neq j \\ 0 & \text { if } i=j\end{array}\right.
+$$
+where the vertices represent tweets and the edges (along with the associated weights) are defined by \(S_{1}\left(t_{i}, t_{j}\right)\).
+
+Then a graph-based clustering method is applied using the Louvain method which is a greedy optimization method for local communiry detection. Advantages of this method are: it does not require prior knowledge of the number of clusters; it does not necessarily favor a balanced clustering, meaning that enables the detection of both small and large scales clusters; and it is computationally convenient since the complexity of the greedy implementation is $O(n log n)$.
+
+The outputs will be the clusters representing the events localized in both time and space.
+
+
+Multiscale Event Detection (MED)
+-------------------------------------------------------------------------------
+The proposed innovative approach to multi-scale event approach relaxes the constraints on spatio-temporal spans and considers the similarity \(S_{2}\left(t_{i}, t_{j}\right)\) between two tweets \(t_{i}\) and \(t_{j}\) in a different way.
+
+If two tweets share common terms and are close in space, we could tolerate a "fair enough" temporal resolution in computing their similarity. Vice versa, when they are close in time, we could tolerate a "fair enough" spatial resolution. Essentially two tweets in order to be considered similar must share at a fine resolution spatial or temporal dimensions, so not necessary both simultaneously. 
+
+To do so, here spatial and temporal distances are not incorporated directly in the computation of the similarity metric \(S_{2}\left(t_{i}, t_{j}\right)\). Instead of taking into account spatio-temporal information of a tweet as a whole, now are analyzed spatio-temporal patterns of the words (keywords) in each tweet. More specifically two tweets are compared taking in consideration the similarity between the time series of the number of occurrences of the common terms shared by them (the occurrence is evaluated in terms of in how many tweets these terms appear).
+
+The time series of keywords are build defining with initial temporal resolution \(\Delta t\) and spatial resolution \(\Delta d .\) Next, for each term shared by \(t_{i}\) and \(t_{j},\) the two time series of its number of occurences are computed using the temporal resolution \(\Delta t\). The time series are based on data corresponding to the two geographical cells to which \(t_{i}\) and \(t_{j}\) belong. These geographical cells are defined by discretizing the geographical area using the spatial resolution \(\Delta d .\)
+
+Then the similarity between the time series of keywords is computed by measuring the correlation of their coefficients under the descrte wavelet transform (DWT) using Haar wavelet.
+The idea is then to evaluate the similarity between the two time series at a properly chosen temporal scale, which is in turn determined by the spatial distance between the two geographical cells.
+
+![Keyword time series](https://www.researchgate.net/profile/Francesco_Calabrese2/publication/261952558/figure/fig1/AS:392451631140870@1470579168715/Two-time-series-of-the-number-of-occurrences-of-a-certain-term-computed-using-the.png)
+
+Similarity between two tweets are now defined:
+$$
+S_{2}\left(t_{i}, t_{j}\right)=s_{\mathrm{tf-idf}}\left(t_{i}, t_{j}\right) \times s_{s t}\left(t_{i}, t_{j}\right)
+$$
+
+where \(s_{\text {tf-idf }}\left(t_{i}, t_{j}\right)\) is the text similarity of \(t_{i}\) and \(t_{j}\) defined as in the baseline approach. For each term shared by \(t_{i}\) and \(t_{j},\) similarity of the corresponding time series is computed; \(s_{s t}\left(t_{i}, t_{j}\right)\) is then defined as the maximum such similarity among all the terms shared by \(t_{i}\) and \(t_{j} .\)
+
+The new similarity matrix to build the graph is now defined as:
+$$
+W_{2}(i, j)=\left\{\begin{array}{ll}S_{2}\left(t_{i}, t_{j}\right) & \text { if } i \neq j \\ 0 & \text { if } i=j\end{array}\right.
+$$
+Based on this similarity graph, the Louvain method to detect event clusters is applied as in the baseline approach. 
+
+
+Considerations
+-------------------------------------------------------------------------------
+!!! WARNING
+    1) How can we adapt the event scenario to the topics?
+
+    2) Can we build the timeseries of the keyword occurrences of the tweets for our purpose?
+
+    3) How spatial-temporal information can affect the topics ?
+
+!!! Tip
+    
+    1) Graph based solution.
+
+    2) Takes in deep consideration the timeline of the tweets.
+
+
+
+
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
